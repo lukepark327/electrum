@@ -137,7 +137,8 @@ FALLBACK_NODE_LIST_MAINNET = [
 
 # hardcoded list
 TRAMPOLINE_NODES = [
-    LNPeerAddr(host='34.239.230.56', port=9735, pubkey=bfh('03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f'))
+    LNPeerAddr(host='34.239.230.56', port=9735, pubkey=bfh('03864ef025fde8fb587d989186ce6a4a186895ee44a926bfc370e2c366597a3f8f')),  # ACINQ
+    LNPeerAddr(host='144.76.99.209', port=9740, pubkey=bfh('03ecef675be448b615e6176424070673ef8284e0fd19d8be062a6cb5b130a0a0d1')),  # Electrum trampoline
 ]
 
 
