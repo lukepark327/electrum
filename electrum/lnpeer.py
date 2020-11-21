@@ -139,7 +139,7 @@ class Peer(Logger):
         if isinstance(self.transport, LNTransport):
             await self.transport.handshake()
         # FIXME: "flen" hardcoded but actually it depends on "features"...:
-        self.send_message("init", gflen=0, flen=2, features=self.features.for_init_message(),
+        self.send_message("init", gflen=0, flen=8, features=self.features.for_init_message(),
                           init_tlvs={
                               'networks':
                                   {'chains': constants.net.rev_genesis_bytes()}

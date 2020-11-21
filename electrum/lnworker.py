@@ -75,6 +75,7 @@ from .lnchannel import ChannelBackup
 from .channel_db import UpdateStatus
 from .channel_db import get_mychannel_info, get_mychannel_policy
 from .submarine_swaps import SwapManager
+from .channel_db import ChannelInfo, Policy
 
 if TYPE_CHECKING:
     from .network import Network
@@ -205,7 +206,7 @@ class LNWorker(Logger, NetworkRetryManager[LNPeerAddr]):
         self.features |= LnFeatures.OPTION_STATIC_REMOTEKEY_OPT
         self.features |= LnFeatures.VAR_ONION_OPT
         self.features |= LnFeatures.PAYMENT_SECRET_OPT
-        #self.features |= LnFeatures.TRAMPOLINE_ROUTING_OPT
+        self.features |= LnFeatures.OPTION_TRAMPOLINE_ROUTING_OPT
 
         util.register_callback(self.on_proxy_changed, ['proxy_set'])
 

@@ -360,13 +360,29 @@ def process_onion_packet(onion_packet: OnionPacket, associated_data: bytes,
     next_hops_data = xor_bytes(padded_header, stream_bytes)
     next_hops_data_fd = io.BytesIO(next_hops_data)
 
+    hop_data = OnionHopsDataSingle.from_fd(next_hops_data_fd)
+
+    # trampoline
+    trampoline_onion_packet = hop_data.payload.get('trampoline_onion_packet')
+    if trampoline_onion_packet:
+        top_version = trampoline_onion_packet.get('version')
+        top_public_key = trampoline_onion_packet.get('public_key')
+        top_hops_data = trampoline_onion_packet.get('hops_data')
+        top_hops_data_fd = io.BytesIO(top_hops_data)
+        top_hmac = trampoline_onion_packet.get('hmac')
+        trampoline_onion_packet = OnionPacket(
+            public_key=top_public_key,
+            hops_data=top_hops_data_fd.read(TRAMPOLINE_HOPS_DATA_SIZE),
+            hmac=top_hmac
+        )
+        return process_onion_packet(trampoline_onion_packet, associated_data, our_onion_private_key)
+
     # calc next ephemeral key
     blinding_factor = sha256(onion_packet.public_key + shared_secret)
     blinding_factor_int = int.from_bytes(blinding_factor, byteorder="big")
     next_public_key_int = ecc.ECPubkey(onion_packet.public_key) * blinding_factor_int
     next_public_key = next_public_key_int.get_public_key_bytes()
 
-    hop_data = OnionHopsDataSingle.from_fd(next_hops_data_fd)
     next_onion_packet = OnionPacket(
         public_key=next_public_key,
         hops_data=next_hops_data_fd.read(HOPS_DATA_SIZE),
