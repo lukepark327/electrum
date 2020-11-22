@@ -161,10 +161,25 @@ TRAMPOLINE_FEES = [
         'cltv_expiry_delta': 576,
     },
     {
+        'fee_base_msat': 5000,
+        'fee_proportional_millionths': 500,
+        'cltv_expiry_delta': 576,
+    },
+    {
+        'fee_base_msat': 7000,
+        'fee_proportional_millionths': 1000,
+        'cltv_expiry_delta': 576,
+    },
+    {
         'fee_base_msat': 12000,
         'fee_proportional_millionths': 3000,
         'cltv_expiry_delta': 576,
-    }
+    },
+    {
+        'fee_base_msat': 100000,
+        'fee_proportional_millionths': 3000,
+        'cltv_expiry_delta': 576,
+    },
 ]
 
 
@@ -949,7 +964,6 @@ class LNWallet(LNWorker):
         self.logs[key] = log = []
         success = False
         reason = ''
-        attempts = 1 # debugging
         for i in range(attempts):
             try:
                 # note: path-finding runs in a separate thread so that we don't block the asyncio loop
@@ -1032,6 +1046,9 @@ class LNWallet(LNWorker):
         code, data = failure_msg.code, failure_msg.data
         self.logger.info(f"UPDATE_FAIL_HTLC {repr(code)} {data}")
         self.logger.info(f"error reported by {bh2u(route[sender_idx].node_id)}")
+        if not self.channel_db:
+            self.logger.info(f'ignoring error payload')
+            return False
         # handle some specific error codes
         failure_codes = {
             OnionFailureCode.TEMPORARY_CHANNEL_FAILURE: 0,
@@ -1040,6 +1057,7 @@ class LNWallet(LNWorker):
             OnionFailureCode.INCORRECT_CLTV_EXPIRY: 4,
             OnionFailureCode.EXPIRY_TOO_SOON: 0,
             OnionFailureCode.CHANNEL_DISABLED: 2,
+            #OnionFailureCode.TRAMPOLINE_FEE_INSUFFICIENT:0,
         }
         if code in failure_codes:
             offset = failure_codes[code]
@@ -1050,9 +1068,6 @@ class LNWallet(LNWorker):
                 self.logger.info(f'could not decode channel_update for failed htlc: {channel_update_as_received.hex()}')
                 return True
             short_channel_id = ShortChannelID(payload['short_channel_id'])
-            if not self.channel_db:
-                print('handle_error_code', short_channel_id, payload)
-                return False
             r = self.channel_db.add_channel_update(payload)
             blacklist = False
             if r == UpdateStatus.GOOD:
@@ -1133,13 +1148,13 @@ class LNWallet(LNWorker):
         invoice_pubkey = decoded_invoice.pubkey.serialize()
         invoice_features = decoded_invoice.get_tag('9') or 0
         is_legacy = not bool(invoice_features & LnFeatures.OPTION_TRAMPOLINE_ROUTING_OPT)
-        self.logger.info(f'is legacy: {is_legacy}')
         invoice_routing_info = self.encode_routing_info(decoded_invoice)
-
+        if attempt >= len(TRAMPOLINE_FEES):
+            raise NoPathFound()
         trampoline_addr = TRAMPOLINE_NODES[0]
         trampoline_node_id = trampoline_addr.pubkey
-        params = TRAMPOLINE_FEES[2] #[attempt]
-
+        params = TRAMPOLINE_FEES[attempt]
+        self.logger.info(f'create_trampoline_route: attempt={attempt}, is legacy: {is_legacy}')
         channels = self.channels_for_peer(trampoline_node_id)
         if not channels:
             return
