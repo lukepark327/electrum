@@ -12,7 +12,7 @@ tlvdata,tlv_payload,invoice_features,invoice_features,u64,
 tlvtype,tlv_payload,outgoing_node_id,66098
 tlvdata,tlv_payload,outgoing_node_id,outgoing_node_id,byte,33
 tlvtype,tlv_payload,invoice_routing_info,66099
-tlvdata,tlv_payload,invoice_routing_info,invoice_routing_info,byte,len
+tlvdata,tlv_payload,invoice_routing_info,invoice_routing_info,byte,...
 tlvtype,tlv_payload,trampoline_onion_packet,66100
 tlvdata,tlv_payload,trampoline_onion_packet,version,byte,1
 tlvdata,tlv_payload,trampoline_onion_packet,public_key,byte,33

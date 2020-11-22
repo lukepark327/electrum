@@ -1112,18 +1112,33 @@ class LNWallet(LNWorker):
                 f"min_final_cltv_expiry: {addr.get_min_final_cltv_expiry()}"))
         return addr
 
+    def encode_routing_info(self, decoded_invoice):
+        import bitstring
+        # only want 'r' tags
+        r_tags = list(filter(lambda x: x[0] == 'r', decoded_invoice.tags))
+        # strip the tag type, it's implicitly 'r' now
+        r_tags = list(map(lambda x: x[1], r_tags))
+        result = bitstring.BitArray()
+        for route in r_tags:
+            result.append(bitstring.pack('uint:8', len(route)))
+            for step in route:
+                pubkey, channel, feebase, feerate, cltv = step
+                result.append(bitstring.BitArray(pubkey) + bitstring.BitArray(channel) + bitstring.pack('intbe:32', feebase) + bitstring.pack('intbe:32', feerate) + bitstring.pack('intbe:16', cltv))
+        return result.tobytes()
+
     def create_trampoline_route(self, decoded_invoice: 'LnAddr', attempt:int) -> LNPaymentRoute:
         """ return the route that leads to trampoline, and the trampoline fake edge"""
 
         amount_msat = decoded_invoice.get_amount_msat()
         invoice_pubkey = decoded_invoice.pubkey.serialize()
         invoice_features = decoded_invoice.get_tag('9') or 0
-        supports_trampoline = bool(invoice_features & LnFeatures.OPTION_TRAMPOLINE_ROUTING_OPT)
-        print('recipient supports trampoline:', supports_trampoline)
+        is_legacy = not bool(invoice_features & LnFeatures.OPTION_TRAMPOLINE_ROUTING_OPT)
+        self.logger.info(f'is legacy: {is_legacy}')
+        invoice_routing_info = self.encode_routing_info(decoded_invoice)
 
-        trampoline = TRAMPOLINE_NODES[0]
-        params = TRAMPOLINE_FEES[1] #[attempt]
-        trampoline_node_id = trampoline.pubkey
+        trampoline_addr = TRAMPOLINE_NODES[0]
+        trampoline_node_id = trampoline_addr.pubkey
+        params = TRAMPOLINE_FEES[2] #[attempt]
 
         channels = self.channels_for_peer(trampoline_node_id)
         if not channels:
@@ -1163,13 +1178,13 @@ class LNWallet(LNWorker):
                 node_features=trampoline_features)
         )
         route[-1].outgoing_node_id = invoice_pubkey
-        if not supports_trampoline:
+        route[-1].invoice_routing_info = invoice_routing_info
+        if is_legacy:
             route[-1].invoice_features = invoice_features
-            route[-1].invoice_routing_info = b''
         else:
             route[-1].invoice_features = None
         # legacy recipient needs a fake edge
-        if not supports_trampoline:
+        if is_legacy:
             route.append(
                 RouteEdge(
                     node_id=trampoline_node_id,
@@ -1200,6 +1215,7 @@ class LNWallet(LNWorker):
                     node_features=invoice_features)
             )
             route[-1].outgoing_node_id = None
+            route[-1].invoice_routing_info = None
             route[-1].invoice_features = None
         return route
 
