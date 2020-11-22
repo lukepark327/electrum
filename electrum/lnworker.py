@@ -1141,6 +1141,9 @@ class LNWallet(LNWorker):
                 result.append(bitstring.BitArray(pubkey) + bitstring.BitArray(channel) + bitstring.pack('intbe:32', feebase) + bitstring.pack('intbe:32', feerate) + bitstring.pack('intbe:16', cltv))
         return result.tobytes()
 
+    def suggest_peer(self):
+        return self.lnrater.suggest_peer() if self.channel_db else TRAMPOLINE_NODES[0].pubkey
+
     def create_trampoline_route(self, decoded_invoice: 'LnAddr', attempt:int) -> LNPaymentRoute:
         """ return the route that leads to trampoline, and the trampoline fake edge"""
 
@@ -1151,7 +1154,7 @@ class LNWallet(LNWorker):
         invoice_routing_info = self.encode_routing_info(decoded_invoice)
         if attempt >= len(TRAMPOLINE_FEES):
             raise NoPathFound()
-        trampoline_addr = TRAMPOLINE_NODES[0]
+        trampoline_addr = TRAMPOLINE_NODES[1]
         trampoline_node_id = trampoline_addr.pubkey
         params = TRAMPOLINE_FEES[attempt]
         self.logger.info(f'create_trampoline_route: attempt={attempt}, is legacy: {is_legacy}')
