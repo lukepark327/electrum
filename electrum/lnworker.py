@@ -1146,7 +1146,7 @@ class LNWallet(LNWorker):
         for chan in channels.values():
             trampoline_short_channel_id = chan.short_channel_id
             break
-        # assume direct channel to trampoline        
+        # assume direct channel to trampoline
         trampoline_features = self._peers[trampoline_node_id].features
         # hop to trampoline
         route = [
@@ -1230,7 +1230,6 @@ class LNWallet(LNWorker):
         r_tags = list(filter(lambda x: x[0] == 'r', decoded_invoice.tags))
         # strip the tag type, it's implicitly 'r' now
         r_tags = list(map(lambda x: x[1], r_tags))
-        self.logger.info(f'r_tags {len(r_tags)}')
         # if there are multiple hints, we will use the first one that works,
         # from a random permutation
         random.shuffle(r_tags)
@@ -1273,18 +1272,15 @@ class LNWallet(LNWorker):
                 short_channel_id = ShortChannelID(short_channel_id)
                 # if we have a routing policy for this edge in the db, that takes precedence,
                 # as it is likely from a previous failure
-                if self.channel_db:
-                    channel_policy = self.channel_db.get_policy_for_node(
-                        short_channel_id=short_channel_id,
-                        node_id=prev_node_id,
-                        my_channels=scid_to_my_channels)
-                    if channel_policy:
-                        fee_base_msat = channel_policy.fee_base_msat
-                        fee_proportional_millionths = channel_policy.fee_proportional_millionths
-                        cltv_expiry_delta = channel_policy.cltv_expiry_delta
-                    node_info = self.channel_db.get_node_info_for_node_id(node_id=node_pubkey)
-                else:
-                    node_info = None
+                channel_policy = self.channel_db.get_policy_for_node(
+                    short_channel_id=short_channel_id,
+                    node_id=prev_node_id,
+                    my_channels=scid_to_my_channels)
+                if channel_policy:
+                    fee_base_msat = channel_policy.fee_base_msat
+                    fee_proportional_millionths = channel_policy.fee_proportional_millionths
+                    cltv_expiry_delta = channel_policy.cltv_expiry_delta
+                node_info = self.channel_db.get_node_info_for_node_id(node_id=node_pubkey)
                 route.append(
                     RouteEdge(
                         node_id=node_pubkey,
