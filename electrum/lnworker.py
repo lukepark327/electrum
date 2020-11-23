@@ -1018,7 +1018,7 @@ class LNWallet(LNWorker):
                 # TODO "decode_onion_error" might raise, catch and maybe blacklist/penalise someone?
                 failure_msg, sender_idx = chan.decode_onion_error(payment_attempt.error_bytes, route, htlc.htlc_id)
                 is_blacklisted = self.handle_error_code_from_failed_htlc(failure_msg, sender_idx, route, peer)
-                if is_blacklisted:
+                if self.channel_db and is_blacklisted:
                     # blacklist channel after reporter node
                     # TODO this should depend on the error (even more granularity)
                     # also, we need finer blacklisting (directed edges; nodes)
@@ -1046,9 +1046,6 @@ class LNWallet(LNWorker):
         code, data = failure_msg.code, failure_msg.data
         self.logger.info(f"UPDATE_FAIL_HTLC {repr(code)} {data}")
         self.logger.info(f"error reported by {bh2u(route[sender_idx].node_id)}")
-        if not self.channel_db:
-            self.logger.info(f'ignoring error payload')
-            return False
         # handle some specific error codes
         failure_codes = {
             OnionFailureCode.TEMPORARY_CHANNEL_FAILURE: 0,
@@ -1057,7 +1054,7 @@ class LNWallet(LNWorker):
             OnionFailureCode.INCORRECT_CLTV_EXPIRY: 4,
             OnionFailureCode.EXPIRY_TOO_SOON: 0,
             OnionFailureCode.CHANNEL_DISABLED: 2,
-            #OnionFailureCode.TRAMPOLINE_FEE_INSUFFICIENT:0,
+            OnionFailureCode.TRAMPOLINE_FEE_INSUFFICIENT: 0,
         }
         if code in failure_codes:
             offset = failure_codes[code]
@@ -1065,8 +1062,11 @@ class LNWallet(LNWorker):
             channel_update_as_received = data[offset+2: offset+2+channel_update_len]
             payload = self._decode_channel_update_msg(channel_update_as_received)
             if payload is None:
-                self.logger.info(f'could not decode channel_update for failed htlc: {channel_update_as_received.hex()}')
+                self.logger.info(f'could not decode channel_update for failed htlc: {channel_update_len}  {data.hex()}')
                 return True
+            if not self.channel_db:
+                self.logger.info(f'payload {payload}')
+                return False
             short_channel_id = ShortChannelID(payload['short_channel_id'])
             r = self.channel_db.add_channel_update(payload)
             blacklist = False
