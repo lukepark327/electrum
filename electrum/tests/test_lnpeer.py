@@ -179,6 +179,8 @@ class MockLNWallet(Logger, NetworkRetryManager[LNPeerAddr]):
     on_peer_successfully_established = LNWallet.on_peer_successfully_established
     get_channel_by_id = LNWallet.get_channel_by_id
     channels_for_peer = LNWallet.channels_for_peer
+    get_mychannel_info = LNWallet.get_mychannel_info
+    get_mychannel_policy_for_node = LNWallet.get_mychannel_policy_for_node
     _calc_routing_hints_for_invoice = LNWallet._calc_routing_hints_for_invoice
     handle_error_code_from_failed_htlc = LNWallet.handle_error_code_from_failed_htlc
 

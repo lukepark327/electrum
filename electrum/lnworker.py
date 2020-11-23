@@ -981,7 +981,7 @@ class LNWallet(LNWorker):
                 log.append(PaymentAttemptLog(success=False, exception=e))
                 self.set_invoice_status(key, PR_UNPAID)
                 reason = str(e)
-                raise
+                break
             log.append(payment_attempt_log)
             success = payment_attempt_log.success
             if success:
@@ -1322,11 +1322,11 @@ class LNWallet(LNWorker):
                 path = self.network.path_finder.find_path_for_payment(
                     self.node_keypair.pubkey, invoice_pubkey, amount_msat,
                     my_channels=scid_to_my_channels)
-                if not path:
-                    raise NoPathFound()
-                route = self.network.path_finder.create_route_from_path(
-                    path, self.node_keypair.pubkey,
-                    my_channels=scid_to_my_channels)
+            if not path:
+                raise NoPathFound()
+            route = self.network.path_finder.create_route_from_path(
+                path, self.node_keypair.pubkey,
+                my_channels=scid_to_my_channels)
             if not is_route_sane_to_use(route, amount_msat, decoded_invoice.get_min_final_cltv_expiry()):
                 self.logger.info(f"rejecting insane route {route}")
                 raise NoPathFound()
