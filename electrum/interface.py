@@ -624,10 +624,12 @@ class Interface(Logger):
         mid_time = time.time()
         conn = self.blockchain.connect_chunk(index, res['hex'])
         end_time = time.time()
+        net_params = self.network.get_parameters()
         with open(FILE_NAME, w_or_a) as f:
             f.write(str(height) + '\t')
             f.write(str(mid_time - start_time) + '\t')
-            f.write(str(end_time - mid_time) + '\n')
+            f.write(str(end_time - mid_time) + '\t')
+            f.write(net_params.server.host + '\n')
 
         if not conn:
             return conn, 0
