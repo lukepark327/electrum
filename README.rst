@@ -1,3 +1,16 @@
+Electrum Analysis
+=====================================
+
+How to run::
+
+    sh clean.sh
+    sh run.sh
+    sh stop.sh
+
+
+
+
+
 Electrum - Lightweight Bitcoin client
 =====================================
 

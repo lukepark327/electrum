@@ -22,6 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import time
 import os
 import re
 import ssl
@@ -618,12 +619,15 @@ class Interface(Logger):
             raise RequestCorrupted('inconsistent chunk hex and count')
         if res['count'] != size:
             raise RequestCorrupted(f"expected {size} headers but only got {res['count']}")
-        conn = self.blockchain.connect_chunk(index, res['hex'])
 
         # @ Luke Park
+        mid_time = time.time()
+        conn = self.blockchain.connect_chunk(index, res['hex'])
         end_time = time.time()
         with open(FILE_NAME, w_or_a) as f:
-            f.write(str(height) + '\t' +  str(end_time - start_time) + '\n')
+            f.write(str(height) + '\t')
+            f.write(str(mid_time - start_time) + '\t')
+            f.write(str(end_time - mid_time) + '\n')
 
         if not conn:
             return conn, 0
