@@ -585,6 +585,14 @@ class Interface(Logger):
         return blockchain.deserialize_header(bytes.fromhex(res), height)
 
     async def request_chunk(self, height: int, tip=None, *, can_return_early=False):
+        # @ Luke Park
+        FILE_NAME = 'download_verify.txt'
+        if os.path.exists(FILE_NAME):
+            w_or_a = 'a'
+        else:
+            w_or_a = 'w'
+        start_time = time.time()
+
         if not is_non_negative_integer(height):
             raise Exception(f"{repr(height)} is not a block height")
         index = height // 2016
@@ -611,6 +619,12 @@ class Interface(Logger):
         if res['count'] != size:
             raise RequestCorrupted(f"expected {size} headers but only got {res['count']}")
         conn = self.blockchain.connect_chunk(index, res['hex'])
+
+        # @ Luke Park
+        end_time = time.time()
+        with open(FILE_NAME, w_or_a) as f:
+            f.write(str(height) + '\t' +  str(end_time - start_time) + '\n')
+
         if not conn:
             return conn, 0
         return conn, res['count']
