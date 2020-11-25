@@ -1,3 +1,6 @@
+import os
+
+
 def median(A: list):
     len_ = len(A)
     if len_ % 2 == 0:
@@ -14,25 +17,48 @@ def ninety_nine(A: list):
 
 if __name__ == "__main__":
     """hyperparams"""
-    remove_first_N = 1
+    remove_first_N = 0
 
-    network_times, verify_times = [], []
+    network_timess, verify_timess = [], []
+    per_server = dict()
 
-    """block height | download headers | verify headers | where"""
-    with open('download_verify.txt', 'r') as f:
-        lines = f.readlines()
-        for line in lines:
-            if remove_first_N != 0:
-                remove_first_N -= 1
-                continue
+    """read files"""
+    BASE_PATH = './res'
+    files = os.listdir(BASE_PATH)
+    for file_ in files:
+        
+        N = remove_first_N
 
-            _, network_time, verify_time, _ = line.split()
+        network_times, verify_times = [], []
+        # block height | download headers | verify headers | where
+        with open(BASE_PATH + '/' + file_, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
 
-            network_times.append(float(network_time))
-            verify_times.append(float(verify_time))
+                if N != 0:
+                    N -= 1
+                    continue
+
+                _, network_time, verify_time, server = line.split()
+
+                network_times.append(float(network_time))
+                verify_times.append(float(verify_time))
+                
+                if server in per_server:
+                    per_server[server].append((network_time, verify_time))
+                else:
+                    per_server[server] = [(network_time, verify_time)]
+        
+        network_timess.append(network_times)
+        verify_timess.append(verify_times)
+
+    # from pprint import pprint
+    # pprint(per_server)
+    # print(len(per_server.items()))
+    # exit()
 
     """print"""
-    # print(total_block, total_network_time, total_verify_time)
+    network_times, verify_times = sum(network_timess, []), sum(verify_timess, [])
 
     # Avg.
     print("=========================")
